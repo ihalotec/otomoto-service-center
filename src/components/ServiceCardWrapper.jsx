@@ -75,7 +75,7 @@ const ServiceCardWrapper = ({ id, type, vehicle, customer, estimate, status }) =
       )}>
         <div className="flex items-center">
           {typeStyle.icon}
-          <h4 className={cn("ml-2 font-medium", typeStyle.text)}>{type}</h4>
+          <h4 className={cn("ml-2 font-medium", typeStyle.text)}>{type || 'Unknown Type'}</h4>
         </div>
         <span className={cn(
           "text-xs px-2.5 py-1 rounded-full",
@@ -90,9 +90,9 @@ const ServiceCardWrapper = ({ id, type, vehicle, customer, estimate, status }) =
       
       <div className="p-4">
         <ServiceCardDetail 
-          vehicle={vehicle} 
-          customer={customer} 
-          estimate={estimate} 
+          vehicle={vehicle || {}} 
+          customer={customer || {}} 
+          estimate={estimate || {}} 
         />
       
         <button className={cn(
