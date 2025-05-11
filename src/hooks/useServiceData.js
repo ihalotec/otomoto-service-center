@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, where } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { FirestoreService } from '../services/FirestoreService';
 import { toast } from '@/components/ui/sonner';
 
 export const useServiceData = () => {
@@ -18,109 +17,89 @@ export const useServiceData = () => {
   const [activeTab, setActiveTab] = useState('antrian');
   
   useEffect(() => {
+    // Seed initial data if needed
+    FirestoreService.seedInitialData();
+  }, []);
+  
+  useEffect(() => {
+    setLoading(true);
+    
     try {
-      // Query for services based on active tab
-      const serviceStatus = activeTab === 'antrian' ? 'pending' : 'in-progress';
+      // Map activeTab values to Firestore status values
+      const serviceStatus = activeTab === 'antrian' ? 'waiting' : 
+                           (activeTab === 'dikerjakan' ? 'in-progress' : 'completed');
       
-      const servicesQuery = query(
-        collection(db, 'services'),
-        where('status', '==', serviceStatus)
-      );
-      
-      const unsubscribe = onSnapshot(servicesQuery, (snapshot) => {
-        if (snapshot.empty) {
-          console.log('No services found in Firebase. Using mock data instead.');
-          // Use mock data when Firebase collection is empty
-          provideMockData();
+      // Set up listener for services based on active tab
+      const unsubscribe = FirestoreService.listenToServicesByStatus(serviceStatus, (servicesData) => {
+        if (servicesData.length === 0) {
+          console.log(`No services found with status: ${serviceStatus}. Using mock data.`);
+          // This will either show empty state or could use mock data
+          setServices([]);
         } else {
-          const servicesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          
           setServices(servicesData);
-          
-          // Calculate service statistics
-          const stats = {
-            serviceUmum: { current: 0, max: 10 },
-            cuciSteam: { current: 0, max: 15 },
-            gantiOli: { current: 0, max: 5 },
-            serviceBerat: { current: 0, max: 3 }
-          };
-          
-          servicesData.forEach(service => {
-            if (service.type === 'Service Umum') stats.serviceUmum.current++;
-            else if (service.type === 'Cuci Steam') stats.cuciSteam.current++;
-            else if (service.type === 'Ganti Oli') stats.gantiOli.current++;
-            else if (service.type === 'Service Berat') stats.serviceBerat.current++;
-          });
-          
-          setServiceStats(stats);
-          setLoading(false);
+          console.log(`Loaded ${servicesData.length} services with status: ${serviceStatus}`);
         }
-      }, (err) => {
-        console.error("Firebase error:", err);
-        toast.error("Failed to load data from Firebase");
-        setError(err.message);
-        provideMockData();
+        
+        // Update service statistics by querying all services
+        calculateServiceStats();
+        setLoading(false);
       });
       
-      return () => unsubscribe();
+      return () => {
+        // Clean up subscription when component unmounts or status changes
+        if (unsubscribe) unsubscribe();
+      };
       
     } catch (err) {
       console.error('Error setting up Firebase listener: ', err);
       setError(err.message);
-      provideMockData();
+      setLoading(false);
+      toast.error("Failed to load data from Firebase");
     }
   }, [activeTab]);
   
-  // Function to provide mock data when Firebase fails or is empty
-  const provideMockData = () => {
-    const mockServices = [
-      { 
-        id: 'A001', 
-        type: 'Service Umum', 
-        vehicle: 'B 1234 XYZ - Beat',
-        customer: 'Ahmad',
-        estimate: '45',
-        status: 'In Progress' 
-      },
-      { 
-        id: 'C002', 
-        type: 'Cuci Steam', 
-        vehicle: 'AD 3344 HIJ - PCX',
-        customer: 'Budi', 
-        estimate: '30',
-        status: 'In Progress' 
-      },
-      { 
-        id: 'G002', 
-        type: 'Ganti Oli', 
-        vehicle: 'B 2345 STU - Lexi',
-        customer: 'Charlie',
-        estimate: '20',
-        status: 'In Progress' 
-      },
-      { 
-        id: 'S001', 
-        type: 'Service Berat', 
-        vehicle: 'B 7788 JKL - Vario',
-        customer: 'Diana',
-        estimate: '120',
-        status: 'In Progress' 
-      }
-    ];
-    
+  // Calculate service statistics from Firestore
+  const calculateServiceStats = async () => {
+    try {
+      // Get counts for each service type
+      const queryPromises = [
+        FirestoreService.listenToServicesByStatus('waiting', (data) => {
+          updateStatsForService(data);
+        }),
+        FirestoreService.listenToServicesByStatus('in-progress', (data) => {
+          updateStatsForService(data);
+        })
+      ];
+      
+      return queryPromises;
+    } catch (error) {
+      console.error("Error calculating service stats: ", error);
+      toast.error("Failed to calculate service statistics");
+    }
+  };
+  
+  const updateStatsForService = (servicesData) => {
+    // Calculate statistics
     const stats = {
-      serviceUmum: { current: 3, max: 10 },
-      cuciSteam: { current: 6, max: 15 },
-      gantiOli: { current: 2, max: 5 },
-      serviceBerat: { current: 1, max: 3 }
+      serviceUmum: { current: 0, max: 10 },
+      cuciSteam: { current: 0, max: 15 },
+      gantiOli: { current: 0, max: 5 },
+      serviceBerat: { current: 0, max: 3 }
     };
     
-    setServices(mockServices);
-    setServiceStats(stats);
-    setLoading(false);
+    servicesData.forEach(service => {
+      if (service.type === 'Service Umum') stats.serviceUmum.current++;
+      else if (service.type === 'Cuci Steam') stats.cuciSteam.current++;
+      else if (service.type === 'Ganti Oli') stats.gantiOli.current++;
+      else if (service.type === 'Service Berat') stats.serviceBerat.current++;
+    });
+    
+    setServiceStats(prevStats => ({
+      serviceUmum: { ...prevStats.serviceUmum, current: stats.serviceUmum.current },
+      cuciSteam: { ...prevStats.cuciSteam, current: stats.cuciSteam.current },
+      gantiOli: { ...prevStats.gantiOli, current: stats.gantiOli.current },
+      serviceBerat: { ...prevStats.serviceBerat, current: stats.serviceBerat.current },
+    }));
   };
   
   return {
