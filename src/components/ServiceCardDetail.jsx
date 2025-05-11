@@ -12,7 +12,8 @@ const ServiceCardDetail = ({ vehicle, customer, estimate }) => {
           {vehicle.plate || 'Unknown'}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-          {vehicle.model || 'Unknown'} ({vehicle.type || 'Unknown'})
+          {/* Convert to string to ensure we're not rendering objects */}
+          {typeof vehicle.model === 'string' ? vehicle.model : 'Unknown'} ({typeof vehicle.type === 'string' ? vehicle.type : 'Unknown'})
         </p>
       </div>
     </div>
@@ -29,10 +30,10 @@ const ServiceCardDetail = ({ vehicle, customer, estimate }) => {
       <User className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2 flex-shrink-0" />
       <div className="overflow-hidden">
         <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-          {customer.name || 'Unknown'}
+          {typeof customer.name === 'string' ? customer.name : 'Unknown'}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-          {customer.phone || 'No phone'}
+          {typeof customer.phone === 'string' ? customer.phone : 'No phone'}
         </p>
       </div>
     </div>
@@ -49,10 +50,10 @@ const ServiceCardDetail = ({ vehicle, customer, estimate }) => {
       <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2 flex-shrink-0" />
       <div className="overflow-hidden">
         <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-          Est. {estimate.duration || 'Unknown'}
+          Est. {typeof estimate.duration === 'string' ? estimate.duration : 'Unknown'}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {estimate.completionTime || 'Unknown'}
+          {typeof estimate.completionTime === 'string' ? estimate.completionTime : 'Unknown'}
         </p>
       </div>
     </div>

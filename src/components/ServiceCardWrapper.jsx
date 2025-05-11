@@ -61,6 +61,11 @@ const ServiceCardWrapper = ({ id, type, vehicle, customer, estimate, status }) =
 
   const statusStyle = statusStyles[status] || statusStyles['waiting'];
 
+  // Ensure vehicle, customer, and estimate are objects before passing them
+  const safeVehicle = vehicle && typeof vehicle === 'object' ? vehicle : {};
+  const safeCustomer = customer && typeof customer === 'object' ? customer : {};
+  const safeEstimate = estimate && typeof estimate === 'object' ? estimate : {};
+
   return (
     <Card className={cn(
       "transition-all duration-200 hover:shadow-md overflow-hidden",
@@ -90,9 +95,9 @@ const ServiceCardWrapper = ({ id, type, vehicle, customer, estimate, status }) =
       
       <div className="p-4">
         <ServiceCardDetail 
-          vehicle={vehicle || {}} 
-          customer={customer || {}} 
-          estimate={estimate || {}} 
+          vehicle={safeVehicle}
+          customer={safeCustomer}
+          estimate={safeEstimate}
         />
       
         <button className={cn(
