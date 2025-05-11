@@ -39,6 +39,21 @@ const ServiceCard = ({ id, type, vehicle, customer, estimate, status }) => {
     }
   };
 
+  // Safely extract vehicle information
+  const vehicleInfo = typeof vehicle === 'object' && vehicle !== null
+    ? `${vehicle.plate || 'Unknown'} - ${vehicle.model || 'Unknown'} ${vehicle.type ? `(${vehicle.type})` : ''}`
+    : 'Unknown Vehicle';
+  
+  // Safely extract customer information
+  const customerInfo = typeof customer === 'object' && customer !== null
+    ? customer.name || 'Unknown Customer'
+    : 'Unknown Customer';
+  
+  // Safely extract estimate information
+  const estimateInfo = typeof estimate === 'object' && estimate !== null
+    ? estimate.duration || 'Unknown'
+    : 'Unknown';
+
   const style = getCardStyle();
 
   return (
@@ -59,16 +74,16 @@ const ServiceCard = ({ id, type, vehicle, customer, estimate, status }) => {
         <div className="space-y-2 mb-3">
           <div className="flex items-center text-gray-200">
             <Car className="h-4 w-4 mr-2" />
-            <span className="text-sm">{vehicle}</span>
+            <span className="text-sm">{vehicleInfo}</span>
           </div>
           <div className="flex items-center text-gray-200">
             <User className="h-4 w-4 mr-2" />
-            <span className="text-sm">{customer}</span>
+            <span className="text-sm">{customerInfo}</span>
           </div>
           <div className="flex items-center text-gray-200">
             <Clock className="h-4 w-4 mr-2" />
             <span className="text-sm">
-              {status === 'Completed' ? 'Selesai!' : `Est: ${estimate} menit`}
+              {status === 'Completed' ? 'Selesai!' : `Est: ${estimateInfo} menit`}
             </span>
           </div>
         </div>
